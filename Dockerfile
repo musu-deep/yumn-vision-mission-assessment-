@@ -42,15 +42,18 @@ RUN set -eux; \
     grep -q '<!DOCTYPE html>' frontend/index.html; \
     grep -q '</html>' frontend/index.html; \
     grep -q 'جمعية يُمن الصحية' frontend/index.html; \
-    sed -i 's|نبني الهوية المؤسسية<br>قبل أن نبني الخطة|البناء المؤسسي|g' frontend/index.html; \
+    sed -i 's|نبني الهوية المؤسسية<br>قبل أن نبني الخطة|الإطار الاستراتيجي والتوجه|g' frontend/index.html; \
     sed -i 's|منصة إعداد الرؤية والرسالة والقيم|ورشة بناء الرؤية والرسالة والقيم|g' frontend/index.html; \
-    python -c "from pathlib import Path; p=Path('frontend/index.html'); a=Path('frontend/database-primary.js').read_text(encoding='utf-8'); b=Path('frontend/secure-public.js').read_text(encoding='utf-8'); s=p.read_text(encoding='utf-8'); i='<script>var restoreCurrentResponseFromServer,centralUpdateParticipant,centralResetParticipantPin;</script>\n<script>\n'+a+'\n</script>\n<script>\n'+b+'\n</script>\n</body>'; p.write_text(s.replace('</body>', i, 1), encoding='utf-8')"; \
+    sed -i 's|جمعية يُمن الصحية • نموذج التوجه الاستراتيجي وخطة المائة يوم</span>|جمعية يُمن الصحية • نموذج التوجه الاستراتيجي وخطة المائة يوم | فاس التنموية | 2026</span>|g' frontend/index.html; \
+    python -c "from pathlib import Path; p=Path('frontend/index.html'); a=Path('frontend/database-primary.js').read_text(encoding='utf-8'); b=Path('frontend/secure-public.js').read_text(encoding='utf-8'); c=Path('frontend/final-tweaks.js').read_text(encoding='utf-8'); s=p.read_text(encoding='utf-8'); i='<script>var restoreCurrentResponseFromServer,centralUpdateParticipant,centralResetParticipantPin;</script>\n<script>\n'+a+'\n</script>\n<script>\n'+b+'\n</script>\n<script>\n'+c+'\n</script>\n</body>'; p.write_text(s.replace('</body>', i, 1), encoding='utf-8')"; \
     grep -q 'var restoreCurrentResponseFromServer' frontend/index.html; \
-    grep -q 'البناء المؤسسي' frontend/index.html; \
+    grep -q 'الإطار الاستراتيجي والتوجه' frontend/index.html; \
     grep -q 'ورشة بناء الرؤية والرسالة والقيم' frontend/index.html; \
+    grep -q 'فاس التنموية | 2026' frontend/index.html; \
+    grep -q 'انتقال سلس من عناصر قمع الرؤية والرسالة' frontend/index.html; \
     grep -q 'قاعدة البيانات هي المصدر الأساسي' frontend/index.html; \
     grep -q 'جاهزية النشر العام' frontend/index.html; \
-    rm -f /tmp/index.html.gz frontend/database-primary.js frontend/secure-public.js frontend/deploy.b64.part-* frontend/index.html.gz.b64.part-*
+    rm -f /tmp/index.html.gz frontend/database-primary.js frontend/secure-public.js frontend/final-tweaks.js frontend/deploy.b64.part-* frontend/index.html.gz.b64.part-*
 
 EXPOSE 8000
 
