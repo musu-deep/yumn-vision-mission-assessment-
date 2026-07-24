@@ -1,3 +1,4 @@
+from base64 import b64decode
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -5,7 +6,7 @@ from pathlib import Path
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,11 @@ from .config import settings
 from .database import Base, SessionLocal, engine
 from .models import MessageLog, ParticipantResponse, PlatformSnapshot
 from .schemas import ResponsePayload, SyncPayload, WhatsAppPayload
+
+
+FAVICON_PNG = b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABVklEQVR42u2bSQ7CMAxFGwsJLsVwdIZLwQpWbColzeDvJO73vpHfy3cUqrIsLBZrzxU0Fjlez99eAJ/HK3QR0BNaU0bwAN4iQrzBl/YZPIHXpEE8w+f0L8vOSzzvfg6HeIff4uEI7GH3U1xMwEzNvu9PvACt+Gs3+1+vdd01nyB3SkvCeh1NuYKOaWuzsee1JIjFjNY2m3rudLuMJyDVVKkEC3jICGhIsIKHHYKaSUDCQ+8Btc3GBCHg4RehWNOlhyUK3uQmmCsBccsb/iqcc2FC7r6ZgNpDEQ1vmoBSGAt48xHIhbKC73IGbMFZwnc7BK0h3bwQoQAKoAAKoAAKoAAKoAAKoAAKoAAKAAlo/fZ29FrzHXo1MspLEY5ATky8xp8JSAnwloIYj9Q85AWeI5AjYPYUbPVfBDfTJ7S5GyeIRWeBL07A6Gkw+dfYaDK8/3ZhscD1A/iOndDEvzLhAAAAAElFTkSuQmCC"
+)
 
 
 @asynccontextmanager
@@ -51,6 +57,15 @@ def require_api_key(x_api_key: str | None = Header(default=None)):
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "yumn-platform"}
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return Response(
+        content=FAVICON_PNG,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=604800, immutable"},
+    )
 
 
 @app.get("/")
