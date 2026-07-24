@@ -44,7 +44,7 @@ RUN set -eux; \
     grep -q 'جمعية يُمن الصحية' frontend/index.html; \
     sed -i 's|نبني الهوية المؤسسية<br>قبل أن نبني الخطة|الإطار الاستراتيجي والتوجه|g' frontend/index.html; \
     sed -i 's|منصة إعداد الرؤية والرسالة والقيم|ورشة بناء الرؤية والرسالة والقيم|g' frontend/index.html; \
-    sed -i 's|جمعية يُمن الصحية • نموذج التوجه الاستراتيجي وخطة المائة يوم</span>|جمعية يُمن الصحية • نموذج التوجه الاستراتيجي وخطة المائة يوم | فاس التنموية | 2026</span>|g' frontend/index.html; \
+    sed -i 's~جمعية يُمن الصحية • نموذج التوجه الاستراتيجي وخطة المائة يوم</span>~جمعية يُمن الصحية • نموذج التوجه الاستراتيجي وخطة المائة يوم | فاس التنموية | 2026</span>~g' frontend/index.html; \
     python -c "from pathlib import Path; p=Path('frontend/index.html'); a=Path('frontend/database-primary.js').read_text(encoding='utf-8'); b=Path('frontend/secure-public.js').read_text(encoding='utf-8'); c=Path('frontend/final-tweaks.js').read_text(encoding='utf-8'); s=p.read_text(encoding='utf-8'); i='<script>var restoreCurrentResponseFromServer,centralUpdateParticipant,centralResetParticipantPin;</script>\n<script>\n'+a+'\n</script>\n<script>\n'+b+'\n</script>\n<script>\n'+c+'\n</script>\n</body>'; p.write_text(s.replace('</body>', i, 1), encoding='utf-8')"; \
     grep -q 'var restoreCurrentResponseFromServer' frontend/index.html; \
     grep -q 'الإطار الاستراتيجي والتوجه' frontend/index.html; \
