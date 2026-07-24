@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY frontend ./frontend
 
-# إعادة بناء الواجهة من الأجزاء الجديدة ثم التحقق من بصمتها قبل تشغيل الخادم.
+# إعادة بناء الواجهة من الأجزاء الجديدة ثم التحقق من بصمتها قبل تطبيق تحديثات النصوص.
 RUN set -eux; \
     cat \
       frontend/deploy.b64.part-00a \
@@ -39,6 +39,10 @@ RUN set -eux; \
     grep -q '<!DOCTYPE html>' frontend/index.html; \
     grep -q '</html>' frontend/index.html; \
     grep -q 'جمعية يُمن الصحية' frontend/index.html; \
+    sed -i 's|نبني الهوية المؤسسية<br>قبل أن نبني الخطة|البناء المؤسسي|g' frontend/index.html; \
+    sed -i 's|منصة إعداد الرؤية والرسالة والقيم|ورشة بناء الرؤية والرسالة والقيم|g' frontend/index.html; \
+    grep -q 'البناء المؤسسي' frontend/index.html; \
+    grep -q 'ورشة بناء الرؤية والرسالة والقيم' frontend/index.html; \
     rm -f /tmp/index.html.gz frontend/deploy.b64.part-* frontend/index.html.gz.b64.part-*
 
 EXPOSE 8000
