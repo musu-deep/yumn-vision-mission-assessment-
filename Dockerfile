@@ -48,6 +48,8 @@ RUN set -eux; \
     python -c "from pathlib import Path; p=Path('frontend/index.html'); a=Path('frontend/database-primary.js').read_text(encoding='utf-8'); b=Path('frontend/secure-public.js').read_text(encoding='utf-8'); c=Path('frontend/final-tweaks.js').read_text(encoding='utf-8'); s=p.read_text(encoding='utf-8'); i='<script>var restoreCurrentResponseFromServer,centralUpdateParticipant,centralResetParticipantPin;</script>\n<script>\n'+a+'\n</script>\n<script>\n'+b+'\n</script>\n<script>\n'+c+'\n</script>\n</body>'; p.write_text(s.replace('</body>', i, 1), encoding='utf-8')"; \
     sed -i 's|دخول محمي برمز شخصي لا يظهر لمدير المنصة|دخول محمي برمز شخصي|g' frontend/index.html; \
     sed -i 's|جلسة آمنة تمنع فتح استجابة مشارك آخر|جلسة آمنة وتحليل فوري للإجابات|g' frontend/index.html; \
+    sed -i 's|أدخل اسمك ورقم جوالك ورمزك الشخصي، ثم ابدأ تعبئة النموذج أو استعد مشاركتك السابقة.|أدخل الاسم ورقم الجوال|g' frontend/index.html; \
+    sed -i 's~<strong>تنبيه:</strong> يُنشئ المشارك رمزًا شخصيًا من 6 أرقام لحماية الاستجابة واستعادتها من أي جهاز. لا تشارك الرمز مع الآخرين.~<strong>تنبيه:</strong><br>• يُنشئ المشارك رمزًا شخصيًا من 6 أرقام لحماية الاستجابة واستعادتها من أي جهاز.<br>• يمكن الرجوع لإكمال النموذج بأي وقت قبل موعد الورشة القادمة.~g' frontend/index.html; \
     grep -q 'var restoreCurrentResponseFromServer' frontend/index.html; \
     grep -q 'إطار الاستراتيجية والتوجّه' frontend/index.html; \
     grep -q 'ورشة بناء الرؤية والرسالة والقيم' frontend/index.html; \
@@ -55,6 +57,8 @@ RUN set -eux; \
     grep -q 'حفظ مركزي تلقائي مع نسخة احتياطية مؤقتة' frontend/index.html; \
     grep -q 'دخول محمي برمز شخصي' frontend/index.html; \
     grep -q 'جلسة آمنة وتحليل فوري للإجابات' frontend/index.html; \
+    grep -q 'أدخل الاسم ورقم الجوال' frontend/index.html; \
+    grep -q 'يمكن الرجوع لإكمال النموذج بأي وقت قبل موعد الورشة القادمة' frontend/index.html; \
     grep -q 'انتقال سلس من عناصر قمع الرؤية والرسالة' frontend/index.html; \
     grep -q 'قاعدة البيانات هي المصدر الأساسي' frontend/index.html; \
     grep -q 'جاهزية النشر العام' frontend/index.html; \
