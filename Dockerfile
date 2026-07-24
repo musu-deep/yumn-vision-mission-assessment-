@@ -13,19 +13,33 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY frontend ./frontend
 
-# إعادة بناء الواجهة من الأجزاء المضغوطة.
-# قد تُنتج أداة gzip الملف كاملًا ثم تعيد رمز خروج غير صفري عند وجود اختلاف
-# في تذييل CRC/الحجم؛ لذلك نتحقق من سلامة HTML الناتج بدل الاعتماد على الرمز وحده.
+# إعادة بناء الواجهة من الأجزاء الجديدة ثم التحقق من بصمتها قبل تشغيل الخادم.
 RUN set -eux; \
-    cat frontend/index.html.gz.b64.part-[0-9][0-9] \
+    cat \
+      frontend/deploy.b64.part-00a \
+      frontend/deploy.b64.part-00b \
+      frontend/deploy.b64.part-00c \
+      frontend/deploy.b64.part-00d \
+      frontend/deploy.b64.part-01 \
+      frontend/deploy.b64.part-02 \
+      frontend/deploy.b64.part-03a \
+      frontend/deploy.b64.part-03b \
+      frontend/deploy.b64.part-03c \
+      frontend/deploy.b64.part-03d \
+      frontend/deploy.b64.part-04 \
+      frontend/deploy.b64.part-05a \
+      frontend/deploy.b64.part-05b \
+      frontend/deploy.b64.part-05c \
+      frontend/deploy.b64.part-05d \
       | tr -d '\r\n\t ' \
-      | base64 -d > /tmp/index.html.gz; \
-    gzip -dc /tmp/index.html.gz > frontend/index.html || true; \
-    test -s frontend/index.html; \
+      | base64 -d \
+      > /tmp/index.html.gz; \
+    gzip -dc /tmp/index.html.gz > frontend/index.html; \
+    echo "31e8a408ef7d6bbf0f9868443c62712289fe8c3fe42789d3c898c2da6e37982d  frontend/index.html" | sha256sum -c -; \
     grep -q '<!DOCTYPE html>' frontend/index.html; \
     grep -q '</html>' frontend/index.html; \
     grep -q 'جمعية يُمن الصحية' frontend/index.html; \
-    rm -f /tmp/index.html.gz frontend/index.html.gz.b64.part-[0-9][0-9]
+    rm -f /tmp/index.html.gz frontend/deploy.b64.part-* frontend/index.html.gz.b64.part-*
 
 EXPOSE 8000
 
