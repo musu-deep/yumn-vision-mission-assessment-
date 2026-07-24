@@ -1,10 +1,12 @@
 from base64 import b64decode
 from contextlib import asynccontextmanager
 from datetime import datetime
+from hmac import compare_digest
 from pathlib import Path
+import re
 
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from sqlalchemy import select
@@ -21,6 +23,32 @@ FAVICON_PNG = b64decode(
 )
 
 
+def normalize_phone(value: object) -> str:
+    return re.sub(r"\D", "", str(value or ""))
+
+
+def participant_username(phone: str) -> str:
+    return f"mobile_{normalize_phone(phone)}"
+
+
+def has_valid_api_key(value: str | None) -> bool:
+    return bool(settings.api_key and value and compare_digest(value, settings.api_key))
+
+
+def verify_participant_payload(payload: ResponsePayload, x_api_key: str | None) -> None:
+    if has_valid_api_key(x_api_key):
+        return
+
+    phone = normalize_phone(payload.user.get("phone"))
+    role = str(payload.user.get("role") or "")
+    if not phone or not 8 <= len(phone) <= 15:
+        raise HTTPException(status_code=400, detail="Valid participant phone is required")
+    if payload.username != participant_username(phone):
+        raise HTTPException(status_code=403, detail="Participant identity mismatch")
+    if role not in {"editor", "reviewer", "viewer", "consultant"}:
+        raise HTTPException(status_code=403, detail="Participant role is not allowed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
@@ -29,7 +57,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Yumn Health Strategy Platform API",
-    version="1.0.0",
+    version="1.1.0",
     lifespan=lifespan,
 )
 app.add_middleware(
@@ -50,13 +78,14 @@ def get_db():
 
 
 def require_api_key(x_api_key: str | None = Header(default=None)):
-    if settings.api_key and x_api_key != settings.api_key:
+    if not has_valid_api_key(x_api_key):
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 
 @app.get("/health")
-def health():
-    return {"status": "ok", "service": "yumn-platform"}
+def health(db: Session = Depends(get_db)):
+    db.execute(select(1)).scalar_one()
+    return {"status": "ok", "service": "yumn-platform", "database": "ok"}
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -74,17 +103,59 @@ def frontend():
     return FileResponse(path)
 
 
-@app.post("/api/responses", dependencies=[Depends(require_api_key)])
-def save_response(payload: ResponsePayload, db: Session = Depends(get_db)):
+@app.post("/api/responses")
+def save_response(
+    payload: ResponsePayload,
+    db: Session = Depends(get_db),
+    x_api_key: str | None = Header(default=None),
+):
+    verify_participant_payload(payload, x_api_key)
+
     row = db.get(ParticipantResponse, payload.username)
     if row is None:
         row = ParticipantResponse(username=payload.username)
         db.add(row)
-    row.user_data = payload.user
+
+    row.user_data = {
+        "name": str(payload.user.get("name") or "").strip()[:200],
+        "phone": normalize_phone(payload.user.get("phone")),
+        "role": str(payload.user.get("role") or "editor"),
+    }
     row.response_data = payload.data
     row.updated_at = datetime.utcnow()
     db.commit()
-    return {"status": "ok", "username": payload.username}
+    return {
+        "status": "ok",
+        "storage": "database",
+        "username": payload.username,
+        "updatedAt": row.updated_at.isoformat(),
+    }
+
+
+@app.get("/api/responses/{username}")
+def get_participant_response(
+    username: str,
+    phone: str = Query(min_length=8, max_length=32),
+    db: Session = Depends(get_db),
+):
+    normalized_phone = normalize_phone(phone)
+    if username != participant_username(normalized_phone):
+        raise HTTPException(status_code=403, detail="Participant identity mismatch")
+
+    row = db.get(ParticipantResponse, username)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Response not found")
+
+    stored_phone = normalize_phone((row.user_data or {}).get("phone"))
+    if stored_phone and stored_phone != normalized_phone:
+        raise HTTPException(status_code=403, detail="Participant identity mismatch")
+
+    return {
+        "username": row.username,
+        "user": row.user_data or {},
+        "data": row.response_data or {},
+        "updatedAt": row.updated_at.isoformat(),
+    }
 
 
 @app.post("/api/sync", dependencies=[Depends(require_api_key)])
