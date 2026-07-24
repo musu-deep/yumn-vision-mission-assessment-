@@ -13,6 +13,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY frontend ./frontend
 
+# فحص الجلسة عند فتح الصفحة هو فحص عام؛ عدم وجود جلسة يعيد 200 بدل 401.
+RUN python -c "from pathlib import Path; p=Path('app/main.py'); s=p.read_text(encoding='utf-8'); old='''@app.get(\"/api/auth/me\")\ndef auth_me(identity: dict[str, Any] = Depends(get_identity)):\n    return {\"authenticated\": True, \"user\": {key: identity.get(key, \"\") for key in (\"username\", \"name\", \"phone\", \"role\")}}'''; new='''@app.get(\"/api/auth/me\")\ndef auth_me(request: Request, db: Session = Depends(get_db)):\n    token = request.cookies.get(SESSION_COOKIE, \"\")\n    payload = decode_session_token(token)\n    if not payload:\n        return {\"authenticated\": False, \"user\": None}\n\n    username = str(payload.get(\"sub\") or \"\")\n    role = str(payload.get(\"role\") or \"\")\n    if role == \"admin\":\n        if username != settings.admin_username:\n            return {\"authenticated\": False, \"user\": None}\n        return {\"authenticated\": True, \"user\": {\"username\": username, \"name\": \"مدير منصة يُمن\", \"phone\": \"\", \"role\": \"admin\"}}\n\n    account = db.get(ParticipantAccount, username)\n    if not account or not account.active or account.role not in ALLOWED_PARTICIPANT_ROLES:\n        return {\"authenticated\": False, \"user\": None}\n    if int(payload.get(\"ver\", 0)) != account.session_version:\n        return {\"authenticated\": False, \"user\": None}\n    return {\"authenticated\": True, \"user\": response_user(account)}'''; assert old in s, 'auth_me block not found'; p.write_text(s.replace(old,new,1), encoding='utf-8')"
+
 # إعادة بناء الواجهة والتحقق منها، ثم تطبيق تحديثات النص والحفظ المركزي والجلسات الآمنة.
 RUN set -eux; \
     cat \
