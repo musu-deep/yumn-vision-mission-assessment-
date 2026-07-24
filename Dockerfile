@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY frontend ./frontend
 
-# إعادة بناء الواجهة من الأجزاء الجديدة ثم التحقق من بصمتها قبل تطبيق تحديثات النصوص.
+# إعادة بناء الواجهة والتحقق منها، ثم تطبيق تحديثات النص والحفظ المركزي.
 RUN set -eux; \
     cat \
       frontend/deploy.b64.part-00a \
@@ -41,9 +41,11 @@ RUN set -eux; \
     grep -q 'جمعية يُمن الصحية' frontend/index.html; \
     sed -i 's|نبني الهوية المؤسسية<br>قبل أن نبني الخطة|البناء المؤسسي|g' frontend/index.html; \
     sed -i 's|منصة إعداد الرؤية والرسالة والقيم|ورشة بناء الرؤية والرسالة والقيم|g' frontend/index.html; \
+    python -c "from pathlib import Path; p=Path('frontend/index.html'); j=Path('frontend/database-primary.js').read_text(encoding='utf-8'); s=p.read_text(encoding='utf-8'); p.write_text(s.replace('</body>', '<script>\\n'+j+'\\n</script>\\n</body>', 1), encoding='utf-8')"; \
     grep -q 'البناء المؤسسي' frontend/index.html; \
     grep -q 'ورشة بناء الرؤية والرسالة والقيم' frontend/index.html; \
-    rm -f /tmp/index.html.gz frontend/deploy.b64.part-* frontend/index.html.gz.b64.part-*
+    grep -q 'قاعدة البيانات هي المصدر الأساسي' frontend/index.html; \
+    rm -f /tmp/index.html.gz frontend/database-primary.js frontend/deploy.b64.part-* frontend/index.html.gz.b64.part-*
 
 EXPOSE 8000
 
